@@ -539,11 +539,6 @@ components:
         path:
           type: string
           example: /api/v1/sellers
-        traceId:
-          type: string
-          nullable: true
-          description: ID распределённого трейса (Micrometer Tracing). Используй для поиска в Tempo/Jaeger.
-          example: 0af7651916cd43dd8448eb211c80319c
         fieldErrors:
           type: array
           nullable: true
