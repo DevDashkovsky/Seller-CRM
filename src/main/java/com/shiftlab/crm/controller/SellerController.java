@@ -5,6 +5,10 @@ import com.shiftlab.crm.dto.response.SellerResponse;
 import com.shiftlab.crm.service.SellerService;
 import jakarta.validation.Valid;
 import java.net.URI;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,5 +40,12 @@ public class SellerController {
     @GetMapping("/{id}")
     public ResponseEntity<SellerResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(service.getById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<SellerResponse>> list(
+        @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(service.list(pageable));
     }
 }

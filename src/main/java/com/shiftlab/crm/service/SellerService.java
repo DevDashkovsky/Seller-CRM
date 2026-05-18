@@ -8,6 +8,8 @@ import com.shiftlab.crm.mapper.SellerMapper;
 import com.shiftlab.crm.repository.SellerRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,5 +41,9 @@ public class SellerService {
             )
         );
         return mapper.toResponse(seller);
+    }
+
+    public Page<SellerResponse> list(Pageable pageable) {
+        return repository.findAll(pageable).map(mapper::toResponse);
     }
 }

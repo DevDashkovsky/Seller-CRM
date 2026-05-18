@@ -14,6 +14,7 @@ import com.shiftlab.crm.mapper.SellerMapper;
 import com.shiftlab.crm.repository.SellerRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,6 +22,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class SellerServiceTest {
@@ -120,5 +125,30 @@ class SellerServiceTest {
             .hasMessageContaining("99");
 
         verify(mapper, never()).toResponse(any());
+    }
+
+    @Test
+    void list_shouldMapPageContent_andPreserveMetadata() {
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Seller s1 = new Seller();
+        s1.setId(1L);
+        Seller s2 = new Seller();
+        s2.setId(2L);
+        Page<Seller> entityPage = new PageImpl<>(List.of(s1, s2), pageable, 42);
+
+        SellerResponse r1 = new SellerResponse(1L, "A", null, null, null, null);
+        SellerResponse r2 = new SellerResponse(2L, "B", null, null, null, null);
+
+        when(repository.findAll(pageable)).thenReturn(entityPage);
+        when(mapper.toResponse(s1)).thenReturn(r1);
+        when(mapper.toResponse(s2)).thenReturn(r2);
+
+        Page<SellerResponse> page = service.list(pageable);
+
+        assertThat(page.getContent()).containsExactly(r1, r2);
+        assertThat(page.getTotalElements()).isEqualTo(42);
+        assertThat(page.getNumber()).isEqualTo(0);
+        assertThat(page.getSize()).isEqualTo(20);
     }
 }
