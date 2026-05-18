@@ -1,0 +1,171 @@
+package com.shiftlab.crm.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.shiftlab.crm.dto.request.TransactionCreateRequest;
+import com.shiftlab.crm.dto.response.TransactionResponse;
+import com.shiftlab.crm.entity.PaymentType;
+import com.shiftlab.crm.entity.Seller;
+import com.shiftlab.crm.entity.Transaction;
+import com.shiftlab.crm.mapper.TransactionMapper;
+import com.shiftlab.crm.repository.SellerRepository;
+import com.shiftlab.crm.repository.TransactionRepository;
+import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class TransactionServiceTest {
+
+    @Mock
+    private TransactionRepository repository;
+
+    @Mock
+    private SellerRepository sellerRepository;
+
+    @Mock
+    private TransactionMapper mapper;
+
+    @InjectMocks
+    private TransactionService service;
+
+    @Test
+    void create_shouldKeepProvidedTransactionDate() {
+        LocalDateTime transactionDate = LocalDateTime.of(2026, 5, 17, 12, 0);
+        TransactionCreateRequest request = new TransactionCreateRequest(
+            1L, new BigDecimal("100.00"), PaymentType.CARD, transactionDate
+        );
+
+        Seller seller = new Seller();
+        seller.setId(1L);
+
+        Transaction mapped = new Transaction();
+        mapped.setAmount(new BigDecimal("100.00"));
+        mapped.setPaymentType(PaymentType.CARD);
+        mapped.setTransactionDate(transactionDate);
+
+        Transaction saved = new Transaction();
+        saved.setId(10L);
+        saved.setSeller(seller);
+        saved.setAmount(new BigDecimal("100.00"));
+        saved.setPaymentType(PaymentType.CARD);
+        saved.setTransactionDate(transactionDate);
+
+        TransactionResponse expected = new TransactionResponse(
+            10L, 1L, new BigDecimal("100.00"), PaymentType.CARD,
+            transactionDate, null, null
+        );
+
+        when(sellerRepository.findById(1L)).thenReturn(Optional.of(seller));
+        when(mapper.toEntity(request)).thenReturn(mapped);
+        when(repository.save(mapped)).thenReturn(saved);
+        when(mapper.toResponse(saved)).thenReturn(expected);
+
+        TransactionResponse response = service.create(request);
+
+        assertThat(response).isEqualTo(expected);
+        assertThat(mapped.getSeller()).isSameAs(seller);
+        assertThat(mapped.getTransactionDate()).isEqualTo(transactionDate);
+    }
+
+    @Test
+    void create_shouldFillTransactionDate_whenNullProvided() {
+        TransactionCreateRequest request = new TransactionCreateRequest(
+            1L, new BigDecimal("50.00"), PaymentType.CASH, null
+        );
+
+        Seller seller = new Seller();
+        seller.setId(1L);
+
+        Transaction mapped = new Transaction();
+        mapped.setAmount(new BigDecimal("50.00"));
+        mapped.setPaymentType(PaymentType.CASH);
+        mapped.setTransactionDate(null);
+
+        LocalDateTime before = LocalDateTime.now().minusNanos(1);
+
+        when(sellerRepository.findById(1L)).thenReturn(Optional.of(seller));
+        when(mapper.toEntity(request)).thenReturn(mapped);
+        when(repository.save(any(Transaction.class))).thenAnswer(
+            invocation -> invocation.getArgument(0)
+        );
+        when(mapper.toResponse(any(Transaction.class))).thenReturn(
+            new TransactionResponse(
+                1L, 1L, new BigDecimal("50.00"), PaymentType.CASH,
+                null, null, null
+            )
+        );
+
+        service.create(request);
+
+        ArgumentCaptor<Transaction> captor = ArgumentCaptor.forClass(Transaction.class);
+        verify(repository).save(captor.capture());
+        Transaction passed = captor.getValue();
+        assertThat(passed.getSeller()).isSameAs(seller);
+        assertThat(passed.getTransactionDate()).isNotNull();
+        assertThat(passed.getTransactionDate())
+            .isBetween(before, LocalDateTime.now().plusNanos(1));
+    }
+
+    @Test
+    void create_shouldThrow_whenSellerMissing() {
+        TransactionCreateRequest request = new TransactionCreateRequest(
+            99L, new BigDecimal("10.00"), PaymentType.TRANSFER, null
+        );
+
+        when(sellerRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(request))
+            .isInstanceOf(EntityNotFoundException.class)
+            .hasMessageContaining("99");
+
+        verify(mapper, never()).toEntity(any());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void getById_shouldReturnResponse_whenTransactionExists() {
+        Seller seller = new Seller();
+        seller.setId(1L);
+        Transaction transaction = new Transaction();
+        transaction.setId(42L);
+        transaction.setSeller(seller);
+        transaction.setAmount(new BigDecimal("75.00"));
+        transaction.setPaymentType(PaymentType.CARD);
+
+        TransactionResponse expected = new TransactionResponse(
+            42L, 1L, new BigDecimal("75.00"), PaymentType.CARD,
+            null, null, null
+        );
+
+        when(repository.findById(42L)).thenReturn(Optional.of(transaction));
+        when(mapper.toResponse(transaction)).thenReturn(expected);
+
+        TransactionResponse response = service.getById(42L);
+
+        assertThat(response).isEqualTo(expected);
+    }
+
+    @Test
+    void getById_shouldThrow_whenTransactionMissing() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getById(99L))
+            .isInstanceOf(EntityNotFoundException.class)
+            .hasMessageContaining("99");
+
+        verify(mapper, never()).toResponse(any());
+    }
+}
