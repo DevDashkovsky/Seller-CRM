@@ -2,6 +2,7 @@ package com.shiftlab.crm.service;
 
 
 import com.shiftlab.crm.dto.request.SellerCreateRequest;
+import com.shiftlab.crm.dto.request.SellerUpdateRequest;
 import com.shiftlab.crm.dto.response.SellerResponse;
 import com.shiftlab.crm.entity.Seller;
 import com.shiftlab.crm.mapper.SellerMapper;
@@ -45,5 +46,27 @@ public class SellerService {
 
     public Page<SellerResponse> list(Pageable pageable) {
         return repository.findAll(pageable).map(mapper::toResponse);
+    }
+
+    @Transactional
+    public SellerResponse update(Long id, SellerUpdateRequest request) {
+        Seller seller = repository.findById(id).orElseThrow(
+            () -> new EntityNotFoundException(
+                "Seller with id %d not found".formatted(id)
+            )
+        );
+        seller.setName(request.name());
+        seller.setContactInfo(request.contactInfo());
+        return mapper.toResponse(seller);
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        if (!repository.existsById(id)) {
+            throw new EntityNotFoundException(
+                "Seller with id %d not found".formatted(id)
+            );
+        }
+        repository.deleteById(id);
     }
 }
