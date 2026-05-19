@@ -3,7 +3,7 @@ package com.shiftlab.crm.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public enum Period {
+public enum PeriodType {
     DAY,
     MONTH,
     QUARTER,
