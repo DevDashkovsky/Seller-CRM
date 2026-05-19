@@ -10,6 +10,8 @@ import com.shiftlab.crm.repository.SellerRepository;
 import com.shiftlab.crm.repository.TransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,5 +55,9 @@ public class TransactionService {
             )
         );
         return mapper.toResponse(transaction);
+    }
+
+    public Page<TransactionResponse> list(Pageable pageable) {
+        return repository.findAll(pageable).map(mapper::toResponse);
     }
 }

@@ -18,6 +18,7 @@ import com.shiftlab.crm.repository.TransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +26,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionServiceTest {
@@ -167,5 +172,32 @@ class TransactionServiceTest {
             .hasMessageContaining("99");
 
         verify(mapper, never()).toResponse(any());
+    }
+
+    @Test
+    void list_shouldMapPageContent_andPreserveMetadata() {
+        Pageable pageable = PageRequest.of(0, 20);
+
+        Transaction t1 = new Transaction();
+        t1.setId(1L);
+        Transaction t2 = new Transaction();
+        t2.setId(2L);
+        Page<Transaction> entityPage = new PageImpl<>(List.of(t1, t2), pageable, 42);
+
+        TransactionResponse r1 = new TransactionResponse(
+            1L, 1L, new BigDecimal("10.00"), PaymentType.CARD, null, null, null);
+        TransactionResponse r2 = new TransactionResponse(
+            2L, 1L, new BigDecimal("20.00"), PaymentType.CARD, null, null, null);
+
+        when(repository.findAll(pageable)).thenReturn(entityPage);
+        when(mapper.toResponse(t1)).thenReturn(r1);
+        when(mapper.toResponse(t2)).thenReturn(r2);
+
+        Page<TransactionResponse> page = service.list(pageable);
+
+        assertThat(page.getContent()).containsExactly(r1, r2);
+        assertThat(page.getTotalElements()).isEqualTo(42);
+        assertThat(page.getNumber()).isEqualTo(0);
+        assertThat(page.getSize()).isEqualTo(20);
     }
 }
