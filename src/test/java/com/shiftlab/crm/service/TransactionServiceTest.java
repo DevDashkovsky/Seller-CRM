@@ -200,4 +200,39 @@ class TransactionServiceTest {
         assertThat(page.getNumber()).isEqualTo(0);
         assertThat(page.getSize()).isEqualTo(20);
     }
+
+    @Test
+    void listBySeller_shouldReturnSellerTransactions() {
+        Pageable pageable = PageRequest.of(0, 20);
+        Long sellerId = 7L;
+
+        Transaction t1 = new Transaction();
+        t1.setId(100L);
+        Page<Transaction> entityPage = new PageImpl<>(List.of(t1), pageable, 1);
+
+        TransactionResponse r1 = new TransactionResponse(
+            100L, 7L, new BigDecimal("10.00"), PaymentType.CARD, null, null, null);
+
+        when(sellerRepository.existsById(sellerId)).thenReturn(true);
+        when(repository.findAllBySellerId(sellerId, pageable)).thenReturn(entityPage);
+        when(mapper.toResponse(t1)).thenReturn(r1);
+
+        Page<TransactionResponse> page = service.listBySeller(sellerId, pageable);
+
+        assertThat(page.getContent()).containsExactly(r1);
+        assertThat(page.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void listBySeller_shouldThrow_whenSellerMissing() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(sellerRepository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.listBySeller(99L, pageable))
+            .isInstanceOf(EntityNotFoundException.class)
+            .hasMessageContaining("99");
+
+        verify(repository, never()).findAllBySellerId(any(), any());
+        verify(mapper, never()).toResponse(any());
+    }
 }

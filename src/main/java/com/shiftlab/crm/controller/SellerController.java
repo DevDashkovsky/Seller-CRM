@@ -2,7 +2,9 @@ package com.shiftlab.crm.controller;
 
 import com.shiftlab.crm.dto.request.SellerCreateRequest;
 import com.shiftlab.crm.dto.response.SellerResponse;
+import com.shiftlab.crm.dto.response.TransactionResponse;
 import com.shiftlab.crm.service.SellerService;
+import com.shiftlab.crm.service.TransactionService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import org.springframework.data.domain.Page;
@@ -22,9 +24,11 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RequestMapping("/api/v1/sellers")
 public class SellerController {
     private final SellerService service;
+    private final TransactionService transactionService;
 
-    public SellerController(SellerService service) {
+    public SellerController(SellerService service, TransactionService transactionService) {
         this.service = service;
+        this.transactionService = transactionService;
     }
 
     @PostMapping
@@ -47,5 +51,13 @@ public class SellerController {
         @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(service.list(pageable));
+    }
+
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<Page<TransactionResponse>> listTransactions(
+        @PathVariable Long id,
+        @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(transactionService.listBySeller(id, pageable));
     }
 }

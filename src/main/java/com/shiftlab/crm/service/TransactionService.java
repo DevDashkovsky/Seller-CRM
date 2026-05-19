@@ -60,4 +60,13 @@ public class TransactionService {
     public Page<TransactionResponse> list(Pageable pageable) {
         return repository.findAll(pageable).map(mapper::toResponse);
     }
+
+    public Page<TransactionResponse> listBySeller(Long sellerId, Pageable pageable) {
+        if (!sellerRepository.existsById(sellerId)) {
+            throw new EntityNotFoundException(
+                "Seller with id %d not found".formatted(sellerId)
+            );
+        }
+        return repository.findAllBySellerId(sellerId, pageable).map(mapper::toResponse);
+    }
 }
