@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.shiftlab.crm.dto.request.SellerCreateRequest;
+import com.shiftlab.crm.dto.request.SellerUpdateRequest;
 import com.shiftlab.crm.dto.response.SellerResponse;
 import com.shiftlab.crm.entity.Seller;
 import com.shiftlab.crm.mapper.SellerMapper;
@@ -150,5 +151,65 @@ class SellerServiceTest {
         assertThat(page.getTotalElements()).isEqualTo(42);
         assertThat(page.getNumber()).isEqualTo(0);
         assertThat(page.getSize()).isEqualTo(20);
+    }
+
+    @Test
+    void update_shouldOverwriteMutableFields_andReturnResponse() {
+        Seller existing = new Seller();
+        existing.setId(1L);
+        existing.setName("Old");
+        existing.setContactInfo("old@example.com");
+        existing.setRegistrationDate(LocalDateTime.of(2020, 1, 1, 0, 0));
+
+        SellerUpdateRequest request = new SellerUpdateRequest("New", "new@example.com");
+
+        SellerResponse expected = new SellerResponse(
+            1L, "New", "new@example.com",
+            LocalDateTime.of(2020, 1, 1, 0, 0), null, null
+        );
+
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        when(mapper.toResponse(existing)).thenReturn(expected);
+
+        SellerResponse response = service.update(1L, request);
+
+        assertThat(response).isEqualTo(expected);
+        assertThat(existing.getName()).isEqualTo("New");
+        assertThat(existing.getContactInfo()).isEqualTo("new@example.com");
+        assertThat(existing.getRegistrationDate())
+            .isEqualTo(LocalDateTime.of(2020, 1, 1, 0, 0));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void update_shouldThrow_whenSellerMissing() {
+        SellerUpdateRequest request = new SellerUpdateRequest("New", null);
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(99L, request))
+            .isInstanceOf(EntityNotFoundException.class)
+            .hasMessageContaining("99");
+
+        verify(mapper, never()).toResponse(any());
+    }
+
+    @Test
+    void delete_shouldDelegateToRepository_whenSellerExists() {
+        when(repository.existsById(1L)).thenReturn(true);
+
+        service.delete(1L);
+
+        verify(repository).deleteById(1L);
+    }
+
+    @Test
+    void delete_shouldThrow_whenSellerMissing() {
+        when(repository.existsById(99L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.delete(99L))
+            .isInstanceOf(EntityNotFoundException.class)
+            .hasMessageContaining("99");
+
+        verify(repository, never()).deleteById(any());
     }
 }
