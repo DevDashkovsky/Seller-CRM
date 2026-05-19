@@ -419,9 +419,10 @@ components:
 
     SellerAggregateResponse:
       type: object
-      required: [seller, totalAmount]
+      required: [sellerId, sellerName, totalAmount]
       properties:
-        seller: { $ref: '#/components/schemas/SellerResponse' }
+        sellerId: { type: integer, format: int64, example: 42 }
+        sellerName: { type: string, example: Иван Петров }
         totalAmount:
           type: number
           format: double
@@ -463,9 +464,10 @@ components:
     # ---------- Analytics responses ----------
     TopSellerResponse:
       type: object
-      required: [seller, totalAmount, period, from, to]
+      required: [sellerId, sellerName, totalAmount, period, from, to]
       properties:
-        seller: { $ref: '#/components/schemas/SellerResponse' }
+        sellerId: { type: integer, format: int64, example: 42 }
+        sellerName: { type: string, example: Иван Петров }
         totalAmount: { type: number, format: double, example: 99999.99 }
         period: { $ref: '#/components/schemas/PeriodType' }
         from: { type: string, format: date-time }
