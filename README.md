@@ -1,6 +1,5 @@
 # CRM
 
-Тестовое для ШИФТ Лаборатория. Спека — `SHIFT_Lab_Java_2b1db1e019.pdf` в корне.
 Контракт API — `openapi.yml`.
 
 Учёт продавцов и их транзакций, плюс пара аналитических ручек: топ продавец
@@ -82,7 +81,7 @@ curl 'localhost:8080/api/v1/analytics/sellers/1/best-period?windowDays=7'
 ## Структура
 
 ```
-com.shiftlab.crm
+com.seller.crm
 ├── controller     REST
 ├── service        бизнес-логика
 ├── repository     JPA + JPQL для аналитики
@@ -110,14 +109,14 @@ Best-period работает sliding window'ом по отсортированн
 ```
 
 Отчёт JaCoCo после прогона — `build/reports/jacoco/test/html/index.html`.
-Покрытие выше 50% (требование пдф).
+Покрытие выше 50%.
 
 Сервисы покрыты юнит-тестами (Mockito), контроллеры — MockMvc-тестами на
 основные сценарии (happy + 4xx).
 
 ## Что не делал
 
-- У транзакций нет update/delete — в списке ручек из пдф их нет, оставил
+- У транзакций нет update/delete — в списке ручек их нет, оставил
   иммутабельными.
 - `sellers/below` показывает только продавцов с хотя бы одной транзакцией
   в периоде. Те у кого совсем нет транзакций (0 < threshold) формально подходят,
